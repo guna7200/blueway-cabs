@@ -1,0 +1,328 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  DRIVER
+  ADMIN
+}
+
+enum ApplicationStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum VehicleStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  DRIVER_ASSIGNED
+  DRIVER_ACCEPTED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum ServiceType {
+  ONE_WAY
+  ROUND_TRIP
+  AIRPORT_TRANSFER
+  LOCAL_RENTAL
+  ACTING_DRIVER
+}
+
+enum AirportTripType {
+  PICKUP
+  DROP
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  phone     String?
+  role      Role     @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customer ProfileCustomer?
+  driver   ProfileDriver?
+  admin    ProfileAdmin?
+}
+
+model ProfileCustomer {
+  id        String    @id @default(uuid())
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  address   String?
+  bookings  Booking[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model ProfileDriver {
+  id                 String                     @id @default(uuid())
+  userId             String                     @unique
+  user               User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  licenseNumber      String                     @unique
+  licenseExpiry      String
+  experienceYears    Int                        @default(1)
+  preferredArea      String?
+  drivingType        String?                    // Local, Outstation, Both
+  dob                String?
+  address            String?
+  city               String?
+  profilePhoto       String?
+  status             ApplicationStatus          @default(PENDING)
+  rejectionReason    String?
+  documents          DriverDocument[]
+  assignedVehicles   DriverVehicleAssignment[]
+  bookings           Booking[]
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+}
+
+model ProfileAdmin {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String?  @default("Operations Manager")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DriverDocument {
+  id           String        @id @default(uuid())
+  driverId     String
+  driver       ProfileDriver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  documentType String        // LICENSE, GOVT_ID, ADDRESS_PROOF, PROFILE_PHOTO
+  fileUrl      String
+  status       ApplicationStatus @default(PENDING)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model VehicleType {
+  id             String    @id @default(uuid())
+  name           String    @unique // Sedan, SUV, Innova, Innova Crysta, Premium Sedan, Tempo Traveller
+  slug           String    @unique
+  description    String?
+  capacitySeats  Int       @default(4)
+  luggageBags    Int       @default(2)
+  isAc           Boolean   @default(true)
+  imageUrl       String?
+  baseFare       Float     @default(500)
+  perKmRate      Float     @default(14)
+  minimumKm      Float     @default(10)
+  driverBata     Float     @default(300)
+  nightCharge    Float     @default(200)
+  extraHourRate  Float     @default(150)
+  airportCharge  Float     @default(200)
+  isActive       Boolean   @default(true)
+  vehicles       Vehicle[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Vehicle {
+  id                  String                    @id @default(uuid())
+  ownerName           String
+  ownerPhone          String
+  ownerEmail          String?
+  ownerAddress        String?
+  vehicleNumber       String                    @unique
+  make                String
+  model               String
+  manufacturingYear   Int
+  fuelType            String                    // Petrol, Diesel, EV, CNG
+  seatingCapacity     Int                       @default(4)
+  isAc                Boolean                   @default(true)
+  vehicleTypeId       String
+  vehicleType         VehicleType               @relation(fields: [vehicleTypeId], references: [id])
+  status              VehicleStatus             @default(PENDING)
+  rejectionReason     String?
+  documents           VehicleDocument[]
+  assignedDrivers     DriverVehicleAssignment[]
+  bookings            Booking[]
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+}
+
+model VehicleDocument {
+  id           String        @id @default(uuid())
+  vehicleId    String
+  vehicle      Vehicle       @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  documentType String        // RC, INSURANCE, PERMIT, FITNESS, POLLUTION, VEHICLE_IMAGE
+  fileUrl      String
+  status       ApplicationStatus @default(PENDING)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model DriverVehicleAssignment {
+  id         String        @id @default(uuid())
+  driverId   String
+  driver     ProfileDriver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  vehicleId  String
+  vehicle    Vehicle       @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  assignedAt DateTime      @default(now())
+  active     Boolean       @default(true)
+}
+
+model RentalPackage {
+  id          String   @id @default(uuid())
+  name        String   // 4 Hours, 8 Hours, Full Day, Custom
+  hours       Int
+  includedKm  Int
+  basePrice   Float
+  extraKmRate Float
+  extraHrRate Float
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Booking {
+  id               String                 @id @default(uuid())
+  bookingNumber    String                 @unique // e.g. BW-2026-000001
+  serviceType      ServiceType
+  tripType         String?                // ONE_WAY, ROUND_TRIP
+  airportTripType  AirportTripType?       // PICKUP, DROP
+  
+  pickupLocation   String
+  dropLocation     String?
+  pickupDate       String
+  pickupTime       String
+  returnDate       String?
+  returnTime       String?
+  
+  airportName      String?
+  flightNumber     String?
+  
+  rentalPackageId  String?
+  passengers       Int                    @default(1)
+  
+  customerName     String
+  customerPhone    String
+  customerEmail    String
+  specialNotes     String?
+  ownVehicle       Boolean                @default(false) // For Acting Driver
+  
+  customerId       String?
+  customer         ProfileCustomer?       @relation(fields: [customerId], references: [id])
+  
+  vehicleTypeId    String?
+  vehicleType      VehicleType?           @relation(fields: [vehicleTypeId], references: [id])
+  
+  vehicleId        String?
+  vehicle          Vehicle?               @relation(fields: [vehicleId], references: [id])
+  
+  driverId         String?
+  driver           ProfileDriver?         @relation(fields: [driverId], references: [id])
+  
+  status           BookingStatus          @default(PENDING)
+  
+  pricing          BookingPricing?
+  statusHistory    BookingStatusHistory[]
+  adminNotes       AdminNote[]
+  review           Review?
+  
+  assignedAt       DateTime?
+  assignedBy       String?
+  
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+}
+
+model BookingPricing {
+  id            String   @id @default(uuid())
+  bookingId     String   @unique
+  booking       Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  baseFare      Float    @default(0)
+  estimatedKm   Float    @default(0)
+  ratePerKm     Float    @default(0)
+  kmCharge      Float    @default(0)
+  driverBata    Float    @default(0)
+  nightCharge   Float    @default(0)
+  extraHrCharge Float    @default(0)
+  airportCharge Float    @default(0)
+  tollEstimate  Float    @default(0)
+  parkingEstimate Float  @default(0)
+  discount      Float    @default(0)
+  totalFare     Float    @default(0)
+  
+  createdAt     DateTime @default(now())
+}
+
+model BookingStatusHistory {
+  id        String        @id @default(uuid())
+  bookingId String
+  booking   Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  status    BookingStatus
+  changedBy String        // User name or SYSTEM
+  notes     String?
+  createdAt DateTime      @default(now())
+}
+
+model AdminNote {
+  id        String   @id @default(uuid())
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  author    String
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  bookingId String   @unique
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String?
+  isPublic  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  recipient String   // Email or User ID
+  type      String   // BOOKING_CREATED, BOOKING_CONFIRMED, DRIVER_ASSIGNED, etc.
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model Location {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  address   String?
+  city      String
+  isAirport Boolean  @default(false)
+  isActive  Boolean  @default(true)
+}
