@@ -137,6 +137,7 @@ model VehicleType {
   airportCharge  Float     @default(200)
   isActive       Boolean   @default(true)
   vehicles       Vehicle[]
+  bookings       Booking[]
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
