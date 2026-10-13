@@ -18,16 +18,22 @@ export default async function HomePage() {
     <div className="min-h-screen bg-[#F7FBFF] text-[#051E3D] flex flex-col font-sans">
       <Header />
 
-      {/* Animated Banner Hero Section */}
+      {/* Animated Banner Hero Section with Video Background */}
       <section className="relative pt-12 pb-24 md:pt-16 md:pb-32 bg-[#051E3D] text-white overflow-hidden">
-        {/* Animated Background Banner Image featuring Car + Driver + Passenger */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center opacity-40 scale-105 animate-float-slow transition-opacity duration-700"
-          style={{ backgroundImage: `url('/driver-passenger-banner.jpg')` }}
-        />
+        {/* Background Looping Video of Car Driving on Highway */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          poster="/driver-passenger-banner.jpg"
+          className="absolute inset-0 w-full h-full object-cover opacity-45 pointer-events-none"
+        >
+          <source src="/hero-car-loop.mp4" type="video/mp4" />
+        </video>
         
-        {/* Gradient Overlay for Text Contrast */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#051E3D]/85 via-[#043269]/75 to-[#051E3D]/95" />
+        {/* Gradient Overlay for Crisp Text & Form Contrast */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#051E3D]/85 via-[#043269]/70 to-[#051E3D]/95" />
         <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-[#005FB5]/40 rounded-full blur-[120px] animate-pulse-glow" />
         <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] bg-[#01B4FB]/30 rounded-full blur-[120px] animate-pulse-glow" style={{ animationDelay: '2.5s' }} />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:4rem_4rem]" />
